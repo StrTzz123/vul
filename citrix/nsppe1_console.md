@@ -24,13 +24,13 @@ The flaw exists due to the insecure usage of the `strcpy()` C library function. 
 
 The `strcpy()` function does not verify the length of the source string against the size of the destination buffer. Consequently, providing a command argument exceeding 1408 bytes overwrites adjacent stack memory, including the saved Frame Pointer (RBP) and the Return Address (RIP).
 
-![image-20260117170037674](E:\TZZnoterbook\vul\citrix\image\image-20260117170037674.png)
+![image-20260117170037674](.\image\image-20260117170037674.png)
 
 `processCommand()` Invoking Handler
 
-![image-20260117172551313](E:\TZZnoterbook\vul\citrix\image\image-20260117172551313.png)
+![image-20260117172551313](.\image\image-20260117172551313.png)
 
-![image-20260117172605406](E:\TZZnoterbook\vul\citrix\image\image-20260117172605406.png)
+![image-20260117172605406](.\image\image-20260117172605406.png)
 
  **Service Availability:** The QOSD console service is NOT enabled by default on standard NetScaler deployments. The service must be manually activated through configuration before the vulnerability can be exploited. Default installations are not at risk without explicit administrative action to enable this service.
 
