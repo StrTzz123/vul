@@ -1,9 +1,11 @@
-# 漏洞1 tor命令注入。
+Submittion Date: 2026.4.29
+Vendor: GL-MT3000
+Version: 4.4.5
+Firmware: openwrt-mt3000-4.4.5-0811-1691754744.tar
+Download Link: https://dl.gl-inet.cn/router/mt3000/stable
 
-```lua
-1. tor.set_config 设置uci
-2. 后续在命令中进行读取，然后发现excute漏洞
-```
+
+The issue arises from insufficient sanitization of the countries array parameter within the `/usr/lib/oui-httpd/rpc/tor` script. An authenticated attacker can supply crafted shell metacharacters within this parameter, which are subsequently saved to the UCI configuration. When the system invokes the replace_country() function during the tor_on() execution flow, these malicious inputs are unsafely evaluated, allowing the attacker to achieve arbitrary remote code execution with root privileges.
 
 `usr/lib/oui-httpd/rpc/tor`
 
@@ -37,8 +39,9 @@ en
 
 成功执行命令：
 
-![image.png](image%203.png)
 
+
+Exploit the vulnerability by sending a carefully constructed HTTP request
 ```python
 #!/usr/bin/env python3
 from __future__ import annotations
@@ -157,3 +160,6 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 ```
+
+The exploitation is shown below.
+![image.png](image%203.png)
