@@ -1,8 +1,8 @@
-Submittion Date: 2026.4.29
-Vendor: GL-MT3000
-Version: 4.4.5
-Firmware: openwrt-mt3000-4.4.5-0811-1691754744.tar
-Download Link: https://dl.gl-inet.cn/router/mt3000/stable
+Submittion Date: 2026.4.29  
+Vendor: GL-MT3000   
+Version: 4.4.5  
+Firmware: openwrt-mt3000-4.4.5-0811-1691754744.tar  
+Download Link: https://dl.gl-inet.cn/router/mt3000/stable   
 
 
 The issue arises from insufficient sanitization of the countries array parameter within the `/usr/lib/oui-httpd/rpc/tor` script. An authenticated attacker can supply crafted shell metacharacters within this parameter, which are subsequently saved to the UCI configuration. When the system invokes the replace_country() function during the tor_on() execution flow, these malicious inputs are unsafely evaluated, allowing the attacker to achieve arbitrary remote code execution with root privileges.
