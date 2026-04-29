@@ -1,4 +1,4 @@
-# 漏洞2
+
 Submittion Date: 2026.4.29  
 Vendor: GL-MT3000   
 Version: 4.4.5  
