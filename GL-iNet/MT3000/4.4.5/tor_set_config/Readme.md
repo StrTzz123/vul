@@ -33,12 +33,9 @@ en
 
 ![image.png](image%201.png)
 
-接着在这里实现了命令注入：
+This code have a command inject
 
 ![image.png](image%202.png)
-
-成功执行命令：
-
 
 
 Exploit the vulnerability by sending a carefully constructed HTTP request
