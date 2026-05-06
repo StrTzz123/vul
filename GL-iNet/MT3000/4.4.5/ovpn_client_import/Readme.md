@@ -32,24 +32,28 @@ Authenticated user
   -> arbitrary file creation (writepid) or command execution (up/down/tls-verify)
 ```
 
-The upload endpoint `POST /upload` requires authentication via a valid `sid` session token, except for requests originating from localhost (`127.0.0.1` / `::1`) which bypass authentication entirely.
+The `/upload` endpoint is defined in `etc/nginx/conf.d/gl.conf` and passes through the OUI access control layer before reaching the upload handler:
 
 ![image.png](image.png)
 
-The upload handler in `usr/share/gl-ngx/oui-upload.lua` validates the destination path against an allowlist defined in `/usr/share/gl-upload.d/*`, but performs no content inspection on the uploaded file:
+The upload handler in `usr/share/gl-ngx/oui-upload.lua` performs size checks on the uploaded file, verifying the file is within limits (e.g., 10MB for OVPN files):
 
 ![image.png](image%201.png)
+
+It then validates the destination path against an allowlist defined in `/usr/share/gl-upload.d/*` via the `path_is_allowed()` function, but performs **no content inspection** on the uploaded file:
+
+![image.png](image%202.png)
 
 The allowlist entry for OpenVPN client configs permits:
 ```
 /tmp/ovpn_upload/.+%.ovpn$
 ```
 
-Any file content is written verbatim to disk:
+Once the path passes validation, the multipart file content is written verbatim to disk:
 
-![image.png](image%202.png)
+![image.png](image%203.png)
 
-The `check_config` validator in `usr/share/gl-validator.d/ovpn-client.lua` only checks the filename format with the permissive pattern `".-"` (matches any string). It does not read or inspect the file contents for dangerous directives:
+After upload, the `check_config` validator in `usr/share/gl-validator.d/ovpn-client.lua` only checks the filename format with the permissive pattern `".-"` (matches any string). It does not read or inspect the file contents for dangerous directives:
 
 ```lua
 return {
@@ -57,7 +61,9 @@ return {
 }
 ```
 
-The `confirm_config` handler in `ovpn-client.so` reads the uploaded file, performs format validation, then persists the file path into UCI configuration at `/etc/config/ovpnclient`:
+The `confirm_config` handler in `ovpn-client.so` then persists the file path into UCI configuration at `/etc/config/ovpnclient`:
+
+![image.png](image%204.png)
 
 ```text
 config clients 'writepid_1234'
@@ -66,13 +72,21 @@ config clients 'writepid_1234'
     option path '/tmp/ovpn_upload/writepid_1234.ovpn'
 ```
 
-The `ovpnclient.sh` protocol handler reads the UCI path and applies a minimal `sed` filter at line 50:
+When the VPN connection is started, `ovpnclient.sh` reads the UCI path and copies the file through a minimal `sed` filter (line 50), then launches OpenVPN as root with `--script-security 3` (line 66). The command-line `--writepid` is processed first, but directives from the user config file loaded via `--config` override it:
 
-![image.png](image%204.png)
+![image.png](image%205.png)
 
 ```sh
-# ovpnclient.sh:50 — only 4 directives removed
+# ovpnclient.sh:50 — only 4 directives removed by the sed filter
 sed -e '/^daemon/d' -e '/^dev /d' -e '/^dev-type/d' -e '/^tun-mtu/d' "${ovpn_cfg}" > "${apply_cfg}"
+
+# ovpnclient.sh:66 — OpenVPN launched as root with script-security 3
+proto_run_command "$interface" /usr/sbin/openvpn \
+    --writepid "/var/run/ovpnclient-${interface}.pid" \
+    --script-security 3 \
+    --config "${apply_cfg}" \
+    --up "/etc/openvpn/scripts/ovpnclient-up ..." \
+    --down "/etc/openvpn/scripts/ovpnclient-down ..."
 ```
 
 The following dangerous directives are NOT filtered and pass through to the OpenVPN process:
@@ -84,24 +98,7 @@ The following dangerous directives are NOT filtered and pass through to the Open
 | Info Disclosure | `ca`, `cert`, `key`, `tls-auth`, `crl-verify` | Read sensitive files |
 | Network Hijack | `remote`, `route`, `redirect-gateway`, `http-proxy`, `socks-proxy` | Traffic interception |
 
-The filtered config is then loaded by OpenVPN running as root with `--script-security 3`:
-
-![image.png](image%205.png)
-
-```sh
-proto_run_command "$interface" /usr/sbin/openvpn \
-    --writepid "/var/run/ovpnclient-${interface}.pid" \   # processed first
-    --script-security 3 \                                  # allows script execution
-    --config "${apply_cfg}" \                              # user config processed second, overrides!
-    --up "/etc/openvpn/scripts/ovpnclient-up ..." \        # can be overridden by user config
-    --down "/etc/openvpn/scripts/ovpnclient-down ..."      # can be overridden by user config
-```
-
-OpenVPN processes directives in order. The command-line `--writepid` is processed first, then the `writepid` from the user config file overrides it. Similarly, `up`/`down` directives from the config file override the command-line defaults.
-
-The PoC demonstrates the `writepid` vector — it imports a malicious `.ovpn` containing `writepid /tmp/pwnpoc3`, which causes the root OpenVPN process to create the file at the attacker-specified path:
-
-![image.png](image%206.png)
+OpenVPN processes directives in order: the command-line `--writepid` is processed first, then the `writepid` from the user config file loaded via `--config` overrides it. Similarly, `up`/`down` directives and other script hooks from the config file override the command-line defaults. Since OpenVPN runs as root with `--script-security 3`, all injected script directives execute with root privileges.
 
 Exploit the vulnerability by sending a carefully constructed HTTP request:
 ```python
