@@ -50,11 +50,11 @@ Authenticated attacker
 
 rpcd loads `iwinfo.so` from `/usr/lib/rpcd/` on startup via `dlopen()/dlsym()`. The `rpc_plugin` symbol's `init` callback (offset +0x10) calls `ubus_add_object()`, which registers the method table. The `scan` entry in the method table maps to `scan_handler`:
 
-![image-20260510195242170](image\image-20260510195242170.png)
+![image-20260510195242170](image/image-20260510195242170.png)
 
 The `scan` method's policy validates only the parameter type (BLOBMSG_TYPE_STRING = 3), with no content sanitization:
 
-![image-20260510200141191](image\image-20260510200141191.png)
+![image-20260510200141191](image/image-20260510200141191.png)
 
 ```
 policy: { name: "device", type: BLOBMSG_TYPE_STRING (3) }
@@ -108,7 +108,7 @@ if ( !(*(mtk_ops + 0xE0))(qword_15110, buf, &count) ) {
 
 The screenshot below confirms that `mtk_ops + 0xE0` holds the pointer to `sub_C458`:
 
-![image-20260510202812233](image\image-20260510202812233.png)
+![image-20260510202812233](image/image-20260510202812233.png)
 
 Inside `sub_C458` (the MTK scan implementation), device remapping uses `strcmp()` — exact matching — so non-matching device names are NOT remapped and flow unchanged into `sprintf()` + `system()`:
 
@@ -274,5 +274,5 @@ if __name__ == "__main__":
 
 The exploitation is shown below.
 
-![image-20260510214915662](image\image-20260510214915662.png)
+![image-20260510214915662](image/image-20260510214915662.png)
 
