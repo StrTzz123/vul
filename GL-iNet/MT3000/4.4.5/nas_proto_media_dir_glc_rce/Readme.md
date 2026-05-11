@@ -54,7 +54,7 @@ Unauthenticated attacker
 
 The `/www/cgi-bin/glc` entry point loads plugins with no authentication, no ACL, and no method allowlist:
 
-![image.png](image/image.png)
+![image-20260511224527349](./image-20260511224527349.png)
 
 ```c
 // glc main() — no auth check
@@ -94,7 +94,7 @@ switch (route_id) {
 
 The `FUN_0043d340` handler dispatches by protocol name — matching "ftp" byte-by-byte:
 
-![image-20260511223123958](image/image-20260511223123958.png)
+![image-20260511224504120](./image-20260511224504120.png)
 
 ```c
 // FUN_0043d340 — SET_PROTO_CONFIG handler
@@ -111,7 +111,7 @@ for each proto in protos_array:
 
 The `FUN_0045dc80` FTP handler extracts `media_dir` and passes it directly into `system()` — no shell metacharacter filtering:
 
-![image-20260511223604666](image/image-20260511223604666.png)
+![image-20260511224455909](./image-20260511224455909.png)
 
 ```c
 // FUN_0045dc80 — FTP proto config handler
@@ -170,7 +170,7 @@ The root cause spans three components:
 
 The exploitation is shown below.
 
-![image.png](image/image%201.png)
+![image-20260511224358888](./image-20260511224358888.png)
 
 ```python
 #!/usr/bin/env python3
